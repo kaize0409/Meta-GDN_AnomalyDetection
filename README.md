@@ -9,5 +9,5 @@ This is the implementation for the paper: Few-shot Network Anomaly Detection via
 -scikit-learn: 0.20.3  
 -scipy: 1.2.1
 
-# How-to
+# Evaluation
 python evaluate.py
