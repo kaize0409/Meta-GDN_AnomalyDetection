@@ -15,6 +15,7 @@ class Learner(nn.Module):
         for i, (name, param) in enumerate(self.config):
             if name is 'linear':
                 w = nn.Parameter(torch.ones(*param))
+                torch.nn.init.kaiming_normal_(w)
                 self.vars.append(w)
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
