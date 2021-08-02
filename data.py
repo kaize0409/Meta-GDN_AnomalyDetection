@@ -116,7 +116,7 @@ def sp_matrix_to_torch_sparse_tensor(sparse_mx):
 
 def SGC_process(data_name, degree, l_ratio, tr_ratio):
     adj, features, labels = load_data(data_name)
-    adj = normalize_adjacency(adj)
+    # adj = normalize_adjacency(adj)
     # split training and validation data
     idx_anomaly = np.nonzero(labels == 1)[0]
     idx_normal = np.nonzero(labels == 0)[0]
