@@ -1,6 +1,6 @@
 # Meta-GDN
 
-This is the implementation for the paper: ["Few-shot Network Anomaly Detection via Cross-network Meta-learning"](https://arxiv.org/pdf/2102.11165.pdf).
+This is the implementation for TheWebConf'21 paper: ["Few-shot Network Anomaly Detection via Cross-network Meta-learning"](https://arxiv.org/pdf/2102.11165.pdf).
 ![The proposed framework](Meta-GDN.png)
 
 
