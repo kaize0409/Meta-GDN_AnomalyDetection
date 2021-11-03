@@ -13,3 +13,5 @@ This is the implementation for TheWebConf'21 paper: ["Few-shot Network Anomaly D
 
 # Evaluation
 python evaluate.py
+
+For questions about implementation, please contact qinghai2@illinois.edu
