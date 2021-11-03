@@ -14,4 +14,16 @@ This is the implementation for TheWebConf'21 paper: ["Few-shot Network Anomaly D
 # Evaluation
 python evaluate.py
 
+# Others
+Please cite our paper if you use this code in your own work:
+
+```
+@inproceedings{ding2021few,
+  title={Few-shot Network Anomaly Detection via Cross-network Meta-learning},
+  author={Ding, Kaize and Zhou, Qinghai and Tong, Hanghang and Liu, Huan},
+  booktitle={Proceedings of the Web Conference 2021},
+  pages={2448--2456},
+  year={2021}
+}
+```
 For questions about implementation, please contact qinghai2@illinois.edu
