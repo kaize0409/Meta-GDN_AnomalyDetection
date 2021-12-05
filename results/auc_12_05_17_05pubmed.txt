@@ -1,1 +1,0 @@
-settings: {labeled ratio: 0.050000, training ratio: 0.600000, epochs: 20, update_step: 5}
