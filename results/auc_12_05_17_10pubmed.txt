@@ -1,0 +1,4 @@
+settings: {labeled ratio: 0.050000, training ratio: 0.600000, epochs: 20, update_step: 5}
+target data name:pubmed/Pubmed_2
+0-th try: 
+0-th run

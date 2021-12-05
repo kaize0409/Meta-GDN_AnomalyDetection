@@ -116,7 +116,7 @@ def sp_matrix_to_torch_sparse_tensor(sparse_mx):
 
 def SGC_process(data_name, degree, l_ratio, tr_ratio):
     adj, features, labels = load_data(data_name)
-    # adj = normalize_adjacency(adj)
+    adj = normalize_adjacency(adj)
     # split training and validation data
     idx_anomaly = np.nonzero(labels == 1)[0]
     idx_normal = np.nonzero(labels == 0)[0]
@@ -126,13 +126,13 @@ def SGC_process(data_name, degree, l_ratio, tr_ratio):
     [nor_train, nor_test] = np.array_split(idx_normal, [int(tr_ratio * len(idx_normal))])
     idx_test = np.concatenate((ano_test, nor_test)).tolist()
     nb_ano = int(len(idx_anomaly) * l_ratio)
-    nb_ano = 10
+    # nb_ano = 10
     idx_labeled = np.random.choice(ano_train, size=nb_ano, replace=False)
     idx_unlabeled = remove_values(idx_anomaly, idx_labeled)
     idx_unlabeled = np.concatenate((nor_train, idx_unlabeled)).tolist()
 
     adj = sp_matrix_to_torch_sparse_tensor(adj).float()
-    features = normalize_feature(features)
+    # features = normalize_feature(features)
     features = torch.FloatTensor(features.toarray())
     labels = torch.FloatTensor(labels)
     #compute S^K*X

@@ -40,9 +40,9 @@ class task:
         if self.name == "yelp":
             l = sorted(glob.glob('graphs/*.mat'))
         elif self.name == "pubmed":
-            l = glob.glob("data/Pubmed/*.mat")
+            l = glob.glob("graphs/pubmed/*.mat")
         elif self.name == "reddit":
-            l = glob.glob("data/reddit/*.mat")
+            l = glob.glob("graphs/reddit/*.mat")
         else:
             l = []
         # f_l = list(l[i] for i in [0, 1, 4, 5, 7])
@@ -53,7 +53,7 @@ class task:
             adj, feature, label = load_yelp(f)
             # self.adj_l.append(adj)
             adj = normalize_adjacency(adj)
-            feature = normalize_feature(feature)
+            # feature = normalize_feature(feature)
             adj = sp_matrix_to_torch_sparse_tensor(adj).float()
             feature = torch.FloatTensor(feature.toarray())
             for i in range(self.degree):
