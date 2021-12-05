@@ -1,6 +1,9 @@
 import torch
 import numpy as np
-
+import  scipy.stats
+# from    torch.utils.data import DataLoader
+from    torch.optim import lr_scheduler
+import  random, sys, pickle
 import  argparse
 from datetime import date, datetime
 from meta import Meta
@@ -18,9 +21,9 @@ def main():
     np.random.seed(666)
 
     print(args)
-    nb_epochs = 50
+    nb_epochs = 20
     nb_runs = 10
-    nb_try = 10
+    nb_try = 20
     nb_batch_maml = 64
     nb_batch = 32
     lr_1 = 0.05
@@ -39,7 +42,7 @@ def main():
             f.write("target data name:" + taskData.f_name[-1] + "\n")
             f.write("%d-th try: \n" % t)
             for i in range(nb_runs):
-                # training maml
+                # training meta-gdn
                 print("Meta-GDN training...")
                 print("In %d-th run..." % (i + 1))
                 f.write("%d-th run\n" % i)
@@ -72,7 +75,7 @@ def main():
                 print("End of evaluating.")
                 f.write("Meta-GDN auc_roc: %.5f, auc_pr: %.5f, ap: %.5f\n" % (auc_roc, auc_pr, ap))
 
-                # GDN training
+                # g-dev training
                 print('GDN training...')
                 features, labels, idx_labeled, idx_unlabeled, idx_test = SGC_process(taskData.target, degree=2, l_ratio=lr_s, tr_ratio=tr)
                 # print("finish loading data...")
