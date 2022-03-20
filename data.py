@@ -1,72 +1,78 @@
-import scipy.sparse as sp
 import scipy.io as sio
-import pandas as pd
-import torch
-import numpy as np
-import networkx as nx
-import csv
-import sys
-import pickle as pkl
-from datetime import date, datetime
-from sklearn.preprocessing import normalize
-from scipy.sparse.csgraph import connected_components
+import glob
+from utils import *
 
 
+def task_generator(feature, l_list, ul_list, bs, device):
+    feature_l = []
+    label_l = []
+    feature_l_qry = []
+    label_l_qry = []
 
-class DataLoader:
-    def __init__(self, features, idx_l, idx_u, b_size):
-        self.features = features
-        # self.label = label
-        self.idx_labeled = idx_l
-        self.idx_unlabeled = idx_u
-        self.bs = b_size
+    for i in range(len(feature)):
+        perm_l = list(range(len(l_list[i])))
+        random.shuffle(perm_l)
 
-    def getBatch(self):
-        # idx_x = []
-        y_batch = []
-        idx_x = np.random.choice(self.idx_labeled, size=int(self.bs / 2), replace=False).tolist()
-        idx_x += np.random.choice(self.idx_unlabeled, size=int(self.bs / 2), replace=False).tolist()
-        y_batch = np.concatenate((np.ones(int(self.bs / 2)), np.zeros(int(self.bs / 2))))
-        idx_x = np.array(idx_x).flatten()
-        return self.features[idx_x], torch.FloatTensor(y_batch)
+        perm_ul = list(range(len(ul_list[i])))
+        random.shuffle(perm_ul)
 
-class DataLoaderN:
-    def __init__(self, feature, l_list, ul_list, b_size, b_size_qry, nb_task, device):
-        self.feature = feature
-        self.labeled_l = l_list
-        self.unlabeled_l = ul_list
-        self.bs = b_size
-        self.bs_qry = b_size_qry
-        self.nb_task = nb_task
-        self.device = device
-    def getBatch(self, qry):
-        # idx_l = []
-        feature_l = []
-        label_l = []
-        feature_l_qry = []
-        label_l_qry = []
-        for i in range(self.nb_task):
+        # generate support set
+        support_idx = np.array(l_list[i])[perm_l[:int(bs / 2)]].tolist()
+        support_idx += np.array(ul_list[i])[perm_ul[:int(bs / 2)]].tolist()
+        label_t = np.concatenate((np.ones(int(bs / 2)), np.zeros(int(bs / 2))))
 
-            idx_t = np.random.choice(self.labeled_l[i], size=int(self.bs / 2), replace=False).tolist()
-            idx_t += np.random.choice(self.unlabeled_l[i], size=int(self.bs / 2), replace=False).tolist()
-            label_t = np.concatenate((np.ones(int(self.bs / 2)), np.zeros(int(self.bs / 2))))
-            feature_l.append(self.feature[i][idx_t].to(self.device))
-            label_l.append(torch.FloatTensor(label_t).to(self.device))
-            if qry:
-                idx_t_qry = np.random.choice(self.labeled_l[i], size=int(self.bs_qry / 2), replace=False).tolist()
-                idx_t_qry += np.random.choice(self.unlabeled_l[i], size=int(self.bs_qry / 2), replace=False).tolist()
-                label_t_qry = np.concatenate((np.ones(int(self.bs_qry / 2)), np.zeros(int(self.bs_qry / 2))))
-                feature_l_qry.append(self.feature[i][idx_t_qry].to(self.device))
-                label_l_qry.append(torch.FloatTensor(label_t_qry).to(self.device))
+        feature_l.append(feature[i][support_idx].to(device))
+        label_l.append(torch.FloatTensor(label_t).to(device))
+
+        # generate query set
+        bs_qry = 2 * (len(l_list[i]) - int(bs / 2))
+        qry_idx = np.array(l_list[i])[perm_l[-int(bs_qry / 2):]].tolist()
+        qry_idx += np.array(ul_list[i])[perm_ul[-int(bs_qry / 2):]].tolist()
+        label_t_qry = np.concatenate((np.ones(int(bs_qry / 2)), np.zeros(int(bs_qry / 2))))
+
+        feature_l_qry.append(feature[i][label_t_qry].to(device))
+        label_l_qry.append(torch.FloatTensor(label_t_qry).to(device))
+
+    return feature_l, label_l, feature_l_qry, label_l_qry
 
 
-        return feature_l, label_l, feature_l_qry, label_l_qry
+def test_task_generator(feature, l_list, ul_list, bs, label, test_idx, device):
+    feature_l = []
+    label_l = []
+
+    for q in range(3):
+        perm_l = list(range(len(l_list)))
+        random.shuffle(perm_l)
+
+        perm_ul = list(range(len(ul_list)))
+        random.shuffle(perm_ul)
+
+        # generate support set
+        support_idx = np.array(l_list)[perm_l[:int(bs / 2)]].tolist()
+        support_idx += np.array(ul_list)[perm_ul[:int(bs / 2)]].tolist()
+        label_t = np.concatenate((np.ones(int(bs / 2)), np.zeros(int(bs / 2))))
+
+        feature_l.append(feature[support_idx].to(device))
+        label_l.append(torch.FloatTensor(label_t).to(device))
+
+    return feature_l, label_l, feature[test_idx].to(
+        device), torch.FloatTensor(label[test_idx]).to(device)
 
 
-def remove_values(arr1, arr2):
+def test_task_generator_backup(feature, l_list, ul_list, bs, label, test_idx, device):
+    perm_l = list(range(len(l_list)))
+    random.shuffle(perm_l)
 
-    res = [e for e in arr1 if e not in arr2]
-    return np.array(res)
+    perm_ul = list(range(len(ul_list)))
+    random.shuffle(perm_ul)
+
+    # generate support set
+    support_idx = np.array(l_list)[perm_l[:int(bs / 2)]].tolist()
+    support_idx += np.array(ul_list)[perm_ul[:int(bs / 2)]].tolist()
+    label_t = np.concatenate((np.ones(int(bs / 2)), np.zeros(int(bs / 2))))
+
+    return feature[support_idx].to(device), torch.FloatTensor(label_t).to(device), feature[test_idx].to(
+        device), torch.FloatTensor(label[test_idx]).to(device)
 
 
 def load_yelp(file):
@@ -77,32 +83,6 @@ def load_yelp(file):
 
     return network, attributes, labels
 
-def load_data(d):
-    # data = sio.loadmat("data/{}.mat".format(data_name))
-    data = sio.loadmat(d)
-    network = data['Network'].astype(np.float)
-    labels = data['Label'].flatten()
-    attributes = data['Attributes'].astype(np.float)
-
-    return network, attributes, labels
-
-def normalize_adjacency(adj):
-    adj = adj + sp.eye(adj.shape[0])
-    adj = sp.coo_matrix(adj)
-    row_sum = np.array(adj.sum(1))
-    d_inv_sqrt = np.power(row_sum, -0.5).flatten()
-    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
-    d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
-    return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
-
-def normalize_feature(feature):
-    # Row-wise normalization of sparse feature matrix
-    rowsum = np.array(feature.sum(1))
-    r_inv = np.power(rowsum, -1).flatten()
-    r_inv[np.isinf(r_inv)] = 0.
-    r_mat_inv = sp.diags(r_inv)
-    mx = r_mat_inv.dot(feature)
-    return mx
 
 def sp_matrix_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
@@ -114,59 +94,76 @@ def sp_matrix_to_torch_sparse_tensor(sparse_mx):
     return torch.sparse.FloatTensor(indices, values, shape)
 
 
-def SGC_process(data_name, degree, l_ratio, tr_ratio):
-    adj, features, labels = load_data(data_name)
-    adj = normalize_adjacency(adj)
-    # split training and validation data
-    idx_anomaly = np.nonzero(labels == 1)[0]
-    idx_normal = np.nonzero(labels == 0)[0]
-    np.random.shuffle(idx_anomaly)
-    np.random.shuffle(idx_normal)
-    [ano_train, ano_test] = np.array_split(idx_anomaly, [int(tr_ratio * len(idx_anomaly))])
-    [nor_train, nor_test] = np.array_split(idx_normal, [int(tr_ratio * len(idx_normal))])
-    idx_test = np.concatenate((ano_test, nor_test)).tolist()
-    nb_ano = int(len(idx_anomaly) * l_ratio)
-    # nb_ano = 10
-    idx_labeled = np.random.choice(ano_train, size=nb_ano, replace=False)
-    idx_unlabeled = remove_values(idx_anomaly, idx_labeled)
-    idx_unlabeled = np.concatenate((nor_train, idx_unlabeled)).tolist()
+class DataProcessor:
 
-    adj = sp_matrix_to_torch_sparse_tensor(adj).float()
-    # features = normalize_feature(features)
-    features = torch.FloatTensor(features.toarray())
-    labels = torch.FloatTensor(labels)
-    #compute S^K*X
-    for i in range(degree):
-        features = torch.spmm(adj, features)
+    def __init__(self, num_graph, degree, data_name):
+        self.num_graph = num_graph  # number of auxiliary graph + 1 (target graph)
+        self.degree = degree
+        self.data_name = data_name
+        self.feature_l, self.label_l, self.adj_l = [], [], []
+        self.target, self.target_adj, self.target_feature, self.target_label= None, None, None, None
+        self.target_idx_train_ano_all, self.target_idx_train_normal_all, self.target_idx_val, self.target_idx_test = None, None, None, None
 
-    return features, labels, idx_labeled, idx_unlabeled, idx_test
+        self.labeled_idx_l, self.unlabeled_idx_l = [], []
+        self.target_labeled_idx, self.target_unlabeled_idx = [], []
+
+    def data_loader(self):
+
+        l = glob.glob("graphs/{}/*.mat".format(self.data_name))
+
+        f_l = random.sample(l, self.num_graph)
+        random.shuffle(f_l)
+        for f in f_l[:-1]:
+            adj, feature, label = load_yelp(f)
+            adj = normalize_adjacency(adj)
+            adj = sp_matrix_to_torch_sparse_tensor(adj).float()
+            feature = torch.FloatTensor(feature.toarray())
+            feature = sgc_precompute(feature, adj, self.degree)
+
+            self.feature_l.append(feature)
+            self.label_l.append(label)
+            self.adj_l.append(adj)
+
+        # load the target graph
+        self.target = f_l[-1]
+        adj, feature, label = load_yelp(self.target)
+        adj = normalize_adjacency(adj)
+        self.target_adj = sp_matrix_to_torch_sparse_tensor(adj).float()
+        self.target_feature = torch.FloatTensor(feature.toarray())
+        self.target_feature = sgc_precompute(self.target_feature, self.target_adj, self.degree)
+        self.target_label = label
+
+        # split the target graph into train/valid/test with 4/2/4
+        idx_anomaly = np.random.permutation(np.nonzero(self.target_label == 1)[0])
+        idx_normal = np.random.permutation(np.nonzero(self.target_label == 0)[0])
+        split_ano = int(0.4 * len(idx_anomaly))
+        split_normal = int(0.4 * len(idx_normal))
+
+        self.target_idx_train_ano_all = idx_anomaly[:split_ano]
+        self.target_idx_train_normal_all = idx_normal[:split_normal]
+        self.target_idx_val = np.concatenate((idx_anomaly[split_ano:-split_ano], idx_normal[split_normal:-split_normal])).tolist()
+        self.target_idx_test = np.concatenate((idx_anomaly[-split_ano:], idx_normal[-split_normal:])).tolist()
+
+        print("data loading finished.")
+
+    def sample_anomaly(self, num_labeled_ano):
+
+        for i in range(self.num_graph - 1):
+            # sampling anomalies from auxiliary graphs
+            label_tmp = self.label_l[i]
+            idx_anomaly = np.random.permutation(np.nonzero(label_tmp == 1)[0])
+            idx_normal = np.random.permutation(np.nonzero(label_tmp == 0)[0])
+            self.labeled_idx_l.append(idx_anomaly[:num_labeled_ano].tolist())
+            self.unlabeled_idx_l.append(np.concatenate((idx_normal, idx_anomaly[num_labeled_ano:])).tolist())
+
+        self.target_idx_train_ano_all = np.random.permutation(self.target_idx_train_ano_all)
+        self.target_idx_train_normal_all = np.random.permutation(self.target_idx_train_normal_all)
+
+        if num_labeled_ano <= len(self.target_idx_train_ano_all):
+            self.target_labeled_idx = self.target_idx_train_ano_all[:num_labeled_ano].tolist()
+            self.target_unlabeled_idx = np.concatenate((self.target_idx_train_normal_all, self.target_idx_train_ano_all[num_labeled_ano:])).tolist()
+
+        return [self.feature_l, self.labeled_idx_l, self.unlabeled_idx_l], \
+               [self.target_feature, self.target_labeled_idx, self.target_unlabeled_idx]
 
 
-def parse_index_file(filename):
-    """Parse index file."""
-    index = []
-    for line in open(filename):
-        index.append(int(line.strip()))
-    return index
-
-def sample_mask(idx, l):
-    """Create mask."""
-    mask = np.zeros(l)
-    mask[idx] = 1
-    return np.array(mask, dtype=np.bool)
-
-def largest_connected_components(adj, n_components=1):
-    _, component_indices = connected_components(adj)
-    component_sizes = np.bincount(component_indices)
-    components_to_keep = np.argsort(component_sizes)[::-1][:n_components]  # reverse order to sort descending
-    nodes_to_keep = [
-        idx for (idx, component) in enumerate(component_indices) if component in components_to_keep]
-    print("Selecting {0} largest connected components".format(n_components))
-    return nodes_to_keep
-
-
-def main():
-    pass
-
-if __name__  == '__main__':
-    main()

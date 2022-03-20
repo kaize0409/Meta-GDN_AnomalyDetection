@@ -12,7 +12,7 @@ This is the implementation for TheWebConf'21 paper: ["Few-shot Network Anomaly D
 -scipy: 1.2.1
 
 # Evaluation
-python evaluate.py
+python run.py
 
 # Others
 Please cite our paper if you use this code in your own work:
@@ -26,4 +26,4 @@ Please cite our paper if you use this code in your own work:
   year={2021}
 }
 ```
-For questions about implementation, please contact qinghai2@illinois.edu
+
